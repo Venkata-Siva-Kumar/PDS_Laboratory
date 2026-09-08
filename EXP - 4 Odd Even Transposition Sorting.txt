@@ -1,0 +1,60 @@
+#define N 8
+#include <stdio.h>
+#include <cuda_runtime.h>
+
+__global__ void OE_sort(int *a,int n) 
+{
+	int tid = threadIdx.x;
+	int i,t;
+
+	for(i=1;i<n;i++) 
+	{
+		if(tid<n-1 && tid%2==1) 
+		{
+			t = a[tid+1];
+			a[tid+1] = max(a[tid],t);
+			a[tid] = min(a[tid],t);
+		}
+		__syncthreads();
+		if(tid<n-1 && tid%2==0) 
+		{
+			t = a[tid+1];
+			a[tid+1] = max(a[tid],t);
+			a[tid] = min(a[tid],t);
+		}
+		__syncthreads();
+	}
+}
+
+int main() 
+{
+	int h_a[N];
+	int *d_a;
+	printf("Enter %d elements : \n",N);
+	for(int i=0;i<N;i++)
+		scanf("%d",&h_a[i]);
+	
+	cudaMalloc((void**)&d_a,N*sizeof(int));
+	cudaMemcpy(d_a,h_a,N*sizeof(int),cudaMemcpyHostToDevice);
+	
+	cudaEvent_t start,stop;
+	float time;
+	cudaEventCreate(&start);
+	cudaEventCreate(&stop);
+	cudaEventRecord(start,0);
+	OE_sort<<<1,N>>>(d_a,N);
+	cudaEventRecord(stop,0);
+	cudaEventSynchronize(stop);
+	cudaEventElapsedTime(&time,start,stop);
+	cudaMemcpy(h_a,d_a,N*sizeof(int),cudaMemcpyDeviceToHost);
+	
+	printf("\n Sorted Array :\n");
+	for(int i=0;i<N;i++)
+		printf("%d ",h_a[i]);
+	
+	printf("\n Execution Time = %f ms \n",time);
+	cudaFree(d_a);
+	cudaEventDestroy(start);
+	cudaEventDestroy(stop);
+	return 0;
+}

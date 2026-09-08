@@ -1,0 +1,68 @@
+//Odd Even Transposition sort using openMP
+#include<stdio.h>
+#include<omp.h>
+#include<sys/time.h>
+
+double cpuSecond()
+{
+    struct timeval tp;
+    gettimeofday(&tp,NULL);
+    return ((double)tp.tv_sec+(double)tp.tv_usec*1.e-6);
+}
+
+int main()
+{
+    int a[]={8,3,7,4,9,2,6,1};
+    int n=sizeof(a)/sizeof(a[0]);
+    int i,phase,temp;
+    double start,stop;
+
+    printf("Original array:\n");
+    for(i=0;i<n;i++)
+    {
+        printf("%d",a[i]);
+    }
+
+    start=cpuSecond();
+
+    for(phase=0;phase<n;phase++)
+    {
+        if(phase%2==0)
+        {
+            for(i=0;i<n-1;i+=2)
+            {
+                if(a[i]>a[i+1])
+                {
+                    temp=a[i];
+                    a[i]=a[i+1];
+                    a[i+1]=temp;
+                }
+            }
+        }
+        else
+        {
+            for(i=1;i<n-1;i+=2)
+            {
+                if(a[i]>a[i+1])
+                {
+                    temp=a[i];
+                    a[i]=a[i+1];
+                    a[i+1]=temp;
+                }
+            }
+        }
+    }
+
+    stop=cpuSecond();
+
+    printf("\nSorted array:\n");
+    for(i=0;i<n;i++)
+    {
+        printf("%d",a[i]);
+    }
+
+    printf("\nElapsed Time :%f secs",stop-start);
+    printf("\n");
+
+    return 0;
+}

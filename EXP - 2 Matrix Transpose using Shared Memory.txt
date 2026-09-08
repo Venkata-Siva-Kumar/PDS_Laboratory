@@ -1,0 +1,93 @@
+#include <stdio.h>
+#include <cuda.h>
+#define ROW 4
+#define COL 4
+
+__global__ void mtrans_smem(int *a, int *b)
+{
+	__shared__ int tile[ROW/2][COL/2];
+	
+	int x = threadIdx.x + blockIdx.x * blockDim.x;
+	int y = threadIdx.y + blockIdx.y * blockDim.y;
+	int from = y*COL + x;
+	
+	int bidx = threadIdx.y * blockDim.x + threadIdx.x;
+	int irow = bidx / blockDim.y;
+	int icol = bidx % blockDim.y;
+	
+	
+	x = blockIdx.y * blockDim.y + icol;
+	y = blockIdx.x * blockDim.x + irow;
+
+	int to = y *ROW  + x;
+	
+	if(x<COL && y<ROW)
+	{
+		tile[threadIdx.y][threadIdx.x] = a[from];
+		__syncthreads();
+		
+		b[to] = tile[icol][irow];
+	}
+}
+
+int main()
+{
+	cudaEvent_t start,stop;
+	cudaEventCreate(&start);
+	cudaEventCreate(&stop);
+	
+	int *a,*b;
+	
+	int i,j;
+	
+	int size = ROW * COL * sizeof(int);
+	
+	a = (int*)malloc(size);
+	b = (int*)malloc(size);
+	
+	int *d_a, *d_b;
+	
+	cudaMalloc((void**) &d_a,size);
+	cudaMalloc((void**) &d_b,size);
+	
+	for(i=0;i<ROW*COL;i++)
+	{
+		a[i] = i;
+	}
+	
+	cudaMemcpy(d_a,a, size, cudaMemcpyHostToDevice);
+	
+	dim3 block(2,2);
+	dim3 grid(2,2);
+	
+	cudaEventRecord(start,0);
+	
+	mtrans_smem<<<grid,block>>>(d_a,d_b);
+	
+	cudaEventRecord(stop,0);
+	cudaEventSynchronize(stop);
+	
+	cudaMemcpy(b,d_b,size,cudaMemcpyDeviceToHost);
+	for(i=0;i<ROW;i++)
+	{
+		for(j=0;j<COL;j++)
+		{
+			printf("\t %d",b[i*COL + j]);
+		}
+		printf("\n");
+	}
+	
+	float elapsedtime;
+	cudaEventElapsedTime(&elapsedtime, start, stop);
+	printf("CUDA Execution Time = %f ms",elapsedtime);
+	cudaFree(d_a);
+	cudaFree(d_b);
+	
+	free(a);
+	free(b);
+	
+	cudaEventDestroy(start);
+	cudaEventDestroy(stop);
+	
+	return 0;
+}
