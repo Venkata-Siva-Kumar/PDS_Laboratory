@@ -47,7 +47,7 @@ int main()
 	int i;
 	int in[N+2*RADIUS],out[N];
 	int *d_in,*d_out;
-	cudaMalloc((void**)&d_in,(N+2+RADIUS)*sizeof(int));
+	cudaMalloc((void**)&d_in,(N+2*RADIUS)*sizeof(int));
 	cudaMalloc((void**)&d_out,N*sizeof(int));
 	for(i=0;i<(N+2*RADIUS);i++)
 	{
